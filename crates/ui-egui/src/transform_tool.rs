@@ -169,6 +169,19 @@ fn corners(r: [f64; 4]) -> [[f64; 2]; 4] {
     [[r[0], r[1]], [r[2], r[1]], [r[2], r[3]], [r[0], r[3]]]
 }
 
+/// The interactive frame includes transparent selection margins (#5297). Keep the engine's
+/// content intersection as the empty-selection guard; whole-object layers retain their frame.
+pub(crate) fn frame_bounds(doc: &Document, layer: &photocraft_doc::Layer) -> photocraft_geom::Rect {
+    let content = photocraft_engine::transform_cmds::transform_bounds(doc, layer);
+    if !content.is_empty()
+        && !photocraft_engine::transform_cmds::moves_whole(layer)
+        && let Some(selection) = &doc.selection
+    {
+        return selection.content_bounds();
+    }
+    content
+}
+
 /// Start Free Transform on the active layer (or its selected pixels), or on the targeted unlinked
 /// layer mask, alpha channel or Quick Mask.
 pub fn begin(app: &mut PhotocraftApp, ctx: &egui::Context) -> Result<(), String> {
@@ -195,7 +208,7 @@ pub fn begin(app: &mut PhotocraftApp, ctx: &egui::Context) -> Result<(), String>
     if matches!(layer.content, LayerContent::Adjustment(_)) && layer.mask.is_none() {
         return Err("Adjustment layers have nothing to transform".into());
     }
-    let b = photocraft_engine::transform_cmds::transform_bounds(&doc, layer);
+    let b = frame_bounds(&doc, layer);
     if b.is_empty() {
         return Err("Could not transform: the layer is empty".into());
     }
