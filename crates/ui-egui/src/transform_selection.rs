@@ -9,7 +9,13 @@ use crate::{PhotocraftApp, canvas::ViewXform, state::TransformSession};
 pub(crate) fn session(app: &PhotocraftApp, document: DocId) -> Option<&TransformSession> {
     let t = app.ui.transform.as_ref()?;
     let preview = app.transform_preview.as_ref()?;
-    (preview.doc.id == document && preview.doc.selection.is_some() && !t.selection && t.path.is_none() && t.content_aware.is_none()).then_some(t)
+    (preview.doc.id == document
+        && preview.doc.selection.is_some()
+        && !t.selection
+        && t.path.is_none()
+        && t.content_aware.is_none()
+        && !(t.warp.is_some() && crate::transform_tool::warps_type(app)))
+    .then_some(t)
 }
 
 /// Trace the complete source, including parts currently outside the viewport that a drag can
